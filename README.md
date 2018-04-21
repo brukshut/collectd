@@ -4,7 +4,7 @@ Several collectd plugins written in ruby and utilize the `exec` plugin.
 
 ## brocade virtual traffic manager
 
-This is a `collectd` plugin that scrapes statistics from a Brocade VTM load balancer
+his is a collectd plugin that scrapes statistics from a Brocade VTM load balancer
 
 * plugin: brocade_vtm.rb
 * configuration: brocade_vtm.conf
