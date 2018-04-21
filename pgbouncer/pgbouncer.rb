@@ -1,8 +1,7 @@
 #!/usr/bin/env ruby
 
 ##
-## pgbouncer_collectd.rb
-## pgbouncer collectd plugin 
+## pgbouncer.rb collectd plugin 
 ##
 require 'rubygems'
 require 'optparse'
@@ -10,6 +9,7 @@ require 'socket'
 require 'pg'
 require 'pp'
 
+## METHODS
 def main
   ## options
   options = Hash.new
@@ -31,6 +31,7 @@ def main
   end
   opt_parser.parse!
 
+  ## defaults
   options[:interval] = ENV['COLLECTD_INTERVAL'] unless options[:interval]
   options[:hostname] = Socket.gethostname unless options[:hostname]
 
@@ -47,7 +48,7 @@ def main
     :port => 6543,
     :user => 'statsuser',
     :host => options[:hostname],
-    :password => 'statsuserpassword'
+    :password => 'statsuserpasswd'
   )
 
   begin

@@ -8,7 +8,7 @@ require 'open3'
 require 'crack'
 require 'socket'
 
-## BEGIN METHODS
+## METHODS
 def server_stats(pass_stats)
   sv_stats = {}
   pass_stats['info']['supergroups']['supergroup']['group'].each do |i|
@@ -61,73 +61,73 @@ def worker_stats(pass_stats)
   aggr_stats
 end
 
-## END METHODS
-
-## MAIN
-
-## options
-options = Hash.new
-opt_parser = OptionParser.new do |opts|
-  opts.banner = "Usage: #{$0} [OPTIONS]"
-  opts.on('-H', '--hostname [hostname]', String, 'hostname') do |v|
-    options[:hostname] = v
-  end
-  opts.on('-p', '--pool [pool]', String, 'load balancer pool name') do |v|
-    options[:pool] = v
-  end
-  opts.on('-i n', '--interval=n', Integer, 'interval') do |v|
-    options[:interval] = v
-  end
-  opts.on('-h', '--help', 'help') do
-    puts opts
-    exit
-  end
-end
-opt_parser.parse!
-
-## some default variables
-options[:interval] = ENV['COLLECTD_INTERVAL'] unless options[:interval]
-options[:hostname] = Socket.gethostname unless options[:hostname]
-options[:pool] = 'default' if options[:pool].nil?
-
-begin
-  ## sync stdout to flush to collectd
-  $stdout.sync = true
-  ## collection loop
-  while true do
-    start_run = Time.now.to_i
-    next_run = start_run + options[:interval].to_i
-
-    ## require sudo privileges
-    cmd='/usr/bin/sudo /usr/local/bin/passenger-status --show=xml'
-    stdout, stderr, status = Open3.capture3(cmd)
-    if stderr.empty?
-      pass_stats = Crack::XML.parse(stdout)
-      metrics_prefix = "#{options[:hostname]}/passenger"
-      begin
-        server = server_stats(pass_stats)
-        server.each do |k, v|
-          puts "PUTVAL #{metrics_prefix}/gauge-server/#{options[:pool]}_#{k} interval=10 #{start_run}:#{v}"
-        end
-      rescue 
-        ##
-      end
-      begin
-        workers = worker_stats(pass_stats)
-        workers.each do |k, v|
-          puts "PUTVAL #{metrics_prefix}/gauge-workers/#{options[:pool]}_#{k} interval=10 #{start_run}:#{v}"
-        end
-      rescue
-        ##
-      end
-    else
-      ## exit silently if passenger is not running
-      ## or if you lack privileges to run command
-      ## uncomment the following to debug
-      #puts stderr
+def main
+  ## options
+  options = Hash.new
+  opt_parser = OptionParser.new do |opts|
+    opts.banner = "Usage: #{$0} [OPTIONS]"
+    opts.on('-H', '--hostname [hostname]', String, 'hostname') do |v|
+      options[:hostname] = v
     end
-    while ((time_left = (next_run - Time.now.to_i)) > 0) do
-      sleep(time_left)
+    opts.on('-p', '--pool [pool]', String, 'load balancer pool name') do |v|
+      options[:pool] = v
+    end
+    opts.on('-i n', '--interval=n', Integer, 'interval') do |v|
+      options[:interval] = v
+    end
+    opts.on('-h', '--help', 'help') do
+      puts opts
+      exit
+    end
+  end
+  opt_parser.parse!
+
+  ## defaults
+  options[:interval] = ENV['COLLECTD_INTERVAL'] unless options[:interval]
+  options[:hostname] = Socket.gethostname unless options[:hostname]
+  options[:pool] = 'default' if options[:pool].nil?
+
+  begin
+    ## sync stdout to flush to collectd
+    $stdout.sync = true
+    ## collection loop
+    while true do
+      start_run = Time.now.to_i
+      next_run = start_run + options[:interval].to_i
+
+      ## require sudo privileges
+      cmd='/usr/bin/sudo /usr/local/bin/passenger-status --show=xml'
+      stdout, stderr, status = Open3.capture3(cmd)
+      if stderr.empty?
+        pass_stats = Crack::XML.parse(stdout)
+        metrics_prefix = "#{options[:hostname]}/passenger"
+        begin
+          server = server_stats(pass_stats)
+          server.each do |k, v|
+            puts "PUTVAL #{metrics_prefix}/gauge-server/#{options[:pool]}_#{k} interval=10 #{start_run}:#{v}"
+          end
+        rescue 
+          ## rescue exception here
+        end
+        begin
+          workers = worker_stats(pass_stats)
+          workers.each do |k, v|
+            puts "PUTVAL #{metrics_prefix}/gauge-workers/#{options[:pool]}_#{k} interval=10 #{start_run}:#{v}"
+          end
+        rescue
+          ## rescue exception here
+        end
+      else
+        ## exit silently if passenger is not running
+        ## or if you lack privileges to run command
+        ## uncomment the following to debug
+        #puts stderr
+      end
+      while ((time_left = (next_run - Time.now.to_i)) > 0) do
+        sleep(time_left)
+      end
     end
   end
 end
+
+main()

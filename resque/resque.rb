@@ -1,8 +1,7 @@
 #!/usr/bin/env ruby
 
 ##
-## resque.rb
-## resque collectd plugin 
+## resque.rb collectd plugin
 ##
 require 'optparse'
 require 'resque'
@@ -18,6 +17,7 @@ module Kernel
   end
 end
 
+## METHODS
 def main
   ## options
   options = Hash.new
